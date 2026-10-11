@@ -30,6 +30,18 @@ test('production configuration accepts hosted setup and fails closed on unsafe s
     { AI_PROVIDER: 'fallback', OLLAMA_MODEL: 'local-only' },
   ]) assert.equal(config(overrides).status, 1, JSON.stringify(overrides));
 });
+test('preview configuration derives its exact origin and accepts isolated namespaces', () => {
+  const result = spawnSync(process.execPath, ['-e', "console.log(JSON.stringify(require('./server/dist/config/env').env))"], {
+    cwd: path.resolve(__dirname, '..'),
+    env: { ...production, CLIENT_URL: undefined, VERCEL_ENV: 'preview', VERCEL_URL: 'career-pilot-preview-abc.vercel.app', MONGODB_DATABASE: 'careerpilot_preview', CLOUDINARY_FOLDER_PREFIX: 'careerpilot-preview' },
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0);
+  const values = JSON.parse(result.stdout);
+  assert.equal(values.CLIENT_URL, 'https://career-pilot-preview-abc.vercel.app');
+  assert.equal(values.MONGODB_DATABASE, 'careerpilot_preview');
+  assert.equal(values.CLOUDINARY_FOLDER_PREFIX, 'careerpilot-preview');
+});
 test('Vercel adapter restores API paths and queries without exposing rewrite parameters', async (t) => {
   const appPath = require.resolve('../server/dist/app');
   const dbPath = require.resolve('../server/dist/config/db');

@@ -5,8 +5,9 @@ This repository is prepared for a **same-origin Vercel deployment**: static Reac
 ## Hosting requirements
 
 - Use the repository root, not `client/`, as the Vercel project root. `vercel.json` sets locked installs, builds, API rewrites, SPA routing, bundled export fonts and response-security headers.
+- Automatic Git-triggered deployments are disabled in `vercel.json`. Deploy deliberately with the CLI after environment checks; do not treat pushing to GitHub as publishing.
 - Commercial use requires a Vercel plan that permits it. Vercel Hobby is restricted to personal/non-commercial use: https://vercel.com/docs/limits/fair-use-guidelines . Do not purchase a plan without the owner's approval.
-- Enable Fluid Compute and confirm the selected plan supports the configured 240-second function duration and hourly cron. Requests are bounded to 180 seconds by default, including fallback/comparison calls; the function's duration must exceed that deadline with cleanup headroom.
+- Enable Fluid Compute and confirm the selected plan supports the configured 240-second function duration and daily cron. Requests are bounded to 180 seconds by default, including fallback/comparison calls; the function's duration must exceed that deadline with cleanup headroom. On Hobby, scheduled cleanup runs once daily (02:00 UTC) and is not a substitute for monitoring failed deletions.
 - Vercel functions accept at most 4.5 MB request bodies. Production uploads are limited to **4 MB**, leaving multipart overhead. Local development remains 5 MB. Existing larger originals need a download path outside that response limit; do not delete them to work around it.
 - Vercel cannot run the Ollama installation on this laptop. Clear `OLLAMA_MODEL` and use an approved hosted AI service. Database-backed leases, quotas and rate counters coordinate function replicas; process timers are not relied on for storage cleanup.
 
@@ -18,10 +19,12 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | --- | --- |
 | `NODE_ENV` | `production` |
 | `MONGODB_URI` | Atlas connection for the intended production database, using a least-privilege database account |
+| `MONGODB_DATABASE` | For a test preview, an isolated name such as `careerpilot_preview`; the server uses this even if the URI has another default database. Grant this database user only the necessary preview access when possible. |
 | `CLIENT_URL` | Exact HTTPS origin, e.g. `https://your-project.vercel.app`, without a trailing slash |
 | `VITE_API_URL` | `/api` (or leave unset); never localhost |
 | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Two different cryptographically random secrets, at least 32 characters each |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Production private-file storage credentials |
+| `CLOUDINARY_FOLDER_PREFIX` | `careerpilot-preview` for an isolated test preview; `careerpilot` is the normal default |
 | `EMAIL_PROVIDER` | `resend` |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Delivery credentials and verified sender |
 | `SERVICE_OPERATOR`, `SUPPORT_EMAIL` | Real operator identity and public support contact |
@@ -36,6 +39,8 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | `OLLAMA_MODEL` | Unset/empty on Vercel |
 
 Optional controls: `AI_DAILY_LIMIT=30` (generation-request attempts, including failed/cached POST attempts), `AI_MAX_CONCURRENT=4`, `AI_OPERATION_TIMEOUT_MS=180000`, `GEMINI_TIMEOUT_MS=45000`, `GROQ_TIMEOUT_MS=45000`, `MAX_RESUMES_PER_USER=20`, `UPLOAD_REQUEST_LIMIT=10`, `PASSWORD_RESET_COOLDOWN_SECONDS=60`. These are pilot defaults, not promised service capacity or subscription entitlements.
+
+For a protected Vercel **preview** deployment, omit `CLIENT_URL`: the server derives its exact origin from Vercel's `VERCEL_URL` for that deployment. Set `CLIENT_URL` explicitly for production. Do not share a preview URL without first checking deployment protection.
 
 The production validator fails closed on unsafe settings. A configured key is not proof that it works or is on a privacy-appropriate service tier. Unpaid Gemini is excluded from production fallback; explicit Gemini selection without verified billing is rejected.
 

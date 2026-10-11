@@ -12,7 +12,7 @@ export const connectDatabase = async (): Promise<void> => {
 const openDatabase = async (): Promise<void> => {
   if (env.DNS_SERVERS) setServers(env.DNS_SERVERS.split(',').map((server) => server.trim()));
   try {
-    const connection = await mongoose.connect(env.MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 5, minPoolSize: 0, maxIdleTimeMS: 30000 });
+    const connection = await mongoose.connect(env.MONGODB_URI, { dbName: env.MONGODB_DATABASE, serverSelectionTimeoutMS: 10000, maxPoolSize: 5, minPoolSize: 0, maxIdleTimeMS: 30000 });
     console.log(`✅ MongoDB connected: ${connection.connection.host}`);
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;

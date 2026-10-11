@@ -10,6 +10,7 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+  MONGODB_DATABASE: z.preprocess((value) => value === '' ? undefined : value, z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Use a safe MongoDB database name').optional()),
   // Optional process-only DNS override; leave empty to use the system resolver.
   DNS_SERVERS: z.string().default('').refine(
     (value) => value === '' || value.split(',').every((server) => isIP(server.trim()) !== 0),
@@ -19,7 +20,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 characters'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  CLIENT_URL: z.string().default('http://localhost:5173'),
+  CLIENT_URL: z.string().default(process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173'),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).default('strict'),
   SUPPORT_EMAIL: z.string().default(''),
@@ -41,6 +42,7 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().min(1, 'CLOUDINARY_CLOUD_NAME is required'),
   CLOUDINARY_API_KEY: z.string().min(1, 'CLOUDINARY_API_KEY is required'),
   CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET is required'),
+  CLOUDINARY_FOLDER_PREFIX: z.string().regex(/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/, 'Use a safe Cloudinary folder prefix').default('careerpilot'),
   // AI providers
   AI_PROVIDER: z.enum(['fallback', 'gemini', 'ollama', 'groq']).default('gemini'),
   AI_FALLBACK_COOLDOWN_MS: z.coerce.number().int().min(1000).max(3600000).default(60000),

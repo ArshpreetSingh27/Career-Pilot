@@ -42,7 +42,7 @@ export class ResumeService {
     }
 
     // Upload to Cloudinary
-    const folderPath = `careerpilot/resumes/${userId}`;
+    const folderPath = `${env.CLOUDINARY_FOLDER_PREFIX}/resumes/${userId}`;
     const resumeId = new Types.ObjectId();
     const storageName = `resume-${randomUUID()}.${fileType}`;
     // Record compensation BEFORE creating an external asset. If the process

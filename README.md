@@ -71,7 +71,7 @@ The repository contains a same-origin Vercel configuration, but a successful loc
 - Vercel cannot reach Ollama running on a developer laptop; use a reviewed hosted AI provider for Vercel.
 - AI requests can send resume and job-description content to the configured provider. Users must accept the AI-data notice before generation. The operator must review provider retention and privacy terms before enabling production.
 - Production requires a real support address, verified email sender, strong secrets, an HTTPS site origin, and storage/database configuration. Do not put secrets in `VITE_*` variables.
-- Vercel Hobby is for non-commercial use; the configured hourly cleanup cron also requires a plan that supports that frequency.
+- Vercel Hobby is for non-commercial use. The configured daily cleanup cron is compatible with Hobby but can delay retries of failed storage deletion until its next run.
 - Privacy, terms, and support pages require review by the actual operator. Paid subscriptions and checkout are not implemented.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for phase status, verification evidence, and remaining release gates. Do not advertise the service as commercially launch-ready until those gates are completed.
