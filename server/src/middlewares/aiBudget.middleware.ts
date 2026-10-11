@@ -22,6 +22,7 @@ async function acquire(id: string, token: string) {
 }
 /** Shared admission, one active request per account, daily quota and hard deadline. */
 export async function aiBudget(req: Request, res: Response, next: NextFunction) {
+  if (env.AI_PROVIDER === 'disabled') { next(failure('AI feedback is unavailable in this test preview.', 503)); return; }
   const userId = req.user!.id;
   const token = randomUUID();
   const held: string[] = [];

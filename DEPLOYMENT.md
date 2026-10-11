@@ -35,6 +35,7 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | `GEMINI_API_KEY` | Optional; used in production only with `GEMINI_BILLING_VERIFIED=true` |
 | `GEMINI_BILLING_VERIFIED` | Set `true` only after confirming an active billing account on the actual API project |
 | `AI_DATA_POLICY_ACKNOWLEDGED` | Set `true` only after reviewing processor retention/data-use terms and approving their use for customer resumes |
+| `PREVIEW_LIMITED_MODE` | For a protected, isolated Vercel preview only: set `true` with `AI_PROVIDER=disabled` and `EMAIL_PROVIDER=console`. AI is unavailable and reset links appear only in operator logs. Never use on a production deployment. |
 | `CRON_SECRET` | Cryptographically random secret, at least 32 characters. Vercel sends it as a bearer token to the cleanup cron |
 | `OLLAMA_MODEL` | Unset/empty on Vercel |
 

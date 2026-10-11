@@ -16,6 +16,7 @@ let _provider: IAIProvider | null = null;
 
 export const getAIProvider = (): IAIProvider => {
   if (_provider) return _provider;
+  if (env.AI_PROVIDER === 'disabled') throw Object.assign(new Error('AI feedback is unavailable in this test preview.'), { statusCode: 503, isOperational: true });
 
   if (env.AI_PROVIDER === 'fallback') {
     const providers: IAIProvider[] = [];

@@ -26,6 +26,7 @@ const envSchema = z.object({
   SUPPORT_EMAIL: z.string().default(''),
   SERVICE_OPERATOR: z.string().default(''),
   AI_DATA_POLICY_ACKNOWLEDGED: bool,
+  PREVIEW_LIMITED_MODE: bool,
   GEMINI_BILLING_VERIFIED: bool,
   CRON_SECRET: z.string().default(''),
   MAX_RESUMES_PER_USER: z.coerce.number().int().min(1).max(100).default(20),
@@ -44,7 +45,7 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET is required'),
   CLOUDINARY_FOLDER_PREFIX: z.string().regex(/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/, 'Use a safe Cloudinary folder prefix').default('careerpilot'),
   // AI providers
-  AI_PROVIDER: z.enum(['fallback', 'gemini', 'ollama', 'groq']).default('gemini'),
+  AI_PROVIDER: z.enum(['fallback', 'gemini', 'ollama', 'groq', 'disabled']).default('gemini'),
   AI_FALLBACK_COOLDOWN_MS: z.coerce.number().int().min(1000).max(3600000).default(60000),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600000).default(45000),
@@ -57,6 +58,11 @@ const envSchema = z.object({
 }).superRefine((value, context) => {
   if (value.NODE_ENV !== 'production') return;
   const problem = (path: string, message: string) => context.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+  const limitedPreview = value.PREVIEW_LIMITED_MODE;
+  if (limitedPreview && (!process.env.VERCEL || process.env.VERCEL_ENV !== 'preview')) problem('PREVIEW_LIMITED_MODE', 'Limited mode is only allowed on a Vercel preview deployment.');
+  if (limitedPreview && (!value.MONGODB_DATABASE || value.CLOUDINARY_FOLDER_PREFIX === 'careerpilot')) problem('PREVIEW_LIMITED_MODE', 'Use an isolated preview database and file folder.');
+  if (limitedPreview && value.AI_PROVIDER !== 'disabled') problem('AI_PROVIDER', 'Limited preview must disable AI.');
+  if (!limitedPreview && value.AI_PROVIDER === 'disabled') problem('AI_PROVIDER', 'Disabled AI is only allowed in limited preview mode.');
   try {
     const url = new URL(value.CLIENT_URL);
     if (url.protocol !== 'https:' || ['localhost', '127.0.0.1'].includes(url.hostname) || url.origin !== value.CLIENT_URL) problem('CLIENT_URL', 'Set the exact HTTPS production origin without a trailing slash or path.');
@@ -65,10 +71,10 @@ const envSchema = z.object({
     if (value[key].length < 32 || /your_|change_this|test|example/i.test(value[key])) problem(key, 'Use an independently generated production secret of at least 32 characters.');
   }
   if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) problem('JWT_REFRESH_SECRET', 'Access and refresh secrets must differ.');
-  if (value.EMAIL_PROVIDER !== 'resend' || !value.RESEND_API_KEY || /onboarding@resend.dev/.test(value.EMAIL_FROM)) problem('EMAIL_PROVIDER', 'Production requires email delivery credentials and a verified sender.');
+  if (!limitedPreview && (value.EMAIL_PROVIDER !== 'resend' || !value.RESEND_API_KEY || /onboarding@resend.dev/.test(value.EMAIL_FROM))) problem('EMAIL_PROVIDER', 'Production requires email delivery credentials and a verified sender.');
   if (!z.string().email().safeParse(value.SUPPORT_EMAIL).success) problem('SUPPORT_EMAIL', 'Set a real public support email.');
   if (!value.SERVICE_OPERATOR.trim()) problem('SERVICE_OPERATOR', 'Set the business/person operating this service.');
-  if (!value.AI_DATA_POLICY_ACKNOWLEDGED) problem('AI_DATA_POLICY_ACKNOWLEDGED', 'Review AI processor privacy/retention terms before enabling production.');
+  if (!limitedPreview && !value.AI_DATA_POLICY_ACKNOWLEDGED) problem('AI_DATA_POLICY_ACKNOWLEDGED', 'Review AI processor privacy/retention terms before enabling production.');
   if (value.AI_PROVIDER === 'gemini' && (!value.GEMINI_API_KEY || !value.GEMINI_BILLING_VERIFIED)) problem('GEMINI_BILLING_VERIFIED', 'Personal resumes must not be sent to unpaid Gemini. Verify an active billing account first.');
   if (value.AI_PROVIDER === 'fallback' && !(value.GROQ_API_KEY || (value.GEMINI_API_KEY && value.GEMINI_BILLING_VERIFIED) || value.OLLAMA_MODEL)) problem('AI_PROVIDER', 'Configure at least one approved production AI service.');
   if (value.AI_PROVIDER === 'groq' && !value.GROQ_API_KEY) problem('GROQ_API_KEY', 'Configure the selected AI service.');

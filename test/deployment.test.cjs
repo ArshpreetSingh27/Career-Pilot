@@ -42,6 +42,18 @@ test('preview configuration derives its exact origin and accepts isolated namesp
   assert.equal(values.MONGODB_DATABASE, 'careerpilot_preview');
   assert.equal(values.CLOUDINARY_FOLDER_PREFIX, 'careerpilot-preview');
 });
+test('limited preview permits console recovery only with disabled AI and isolated data', () => {
+  const limited = {
+    VERCEL_ENV: 'preview', PREVIEW_LIMITED_MODE: 'true', AI_PROVIDER: 'disabled',
+    EMAIL_PROVIDER: 'console', RESEND_API_KEY: '', AI_DATA_POLICY_ACKNOWLEDGED: 'false',
+    MONGODB_DATABASE: 'careerpilot_preview', CLOUDINARY_FOLDER_PREFIX: 'careerpilot-preview',
+  };
+  assert.equal(config(limited).status, 0);
+  for (const override of [
+    { VERCEL_ENV: 'production' }, { AI_PROVIDER: 'groq' },
+    { MONGODB_DATABASE: '' }, { CLOUDINARY_FOLDER_PREFIX: 'careerpilot' },
+  ]) assert.equal(config({ ...limited, ...override }).status, 1, JSON.stringify(override));
+});
 test('Vercel adapter restores API paths and queries without exposing rewrite parameters', async (t) => {
   const appPath = require.resolve('../server/dist/app');
   const dbPath = require.resolve('../server/dist/config/db');

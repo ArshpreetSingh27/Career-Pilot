@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Rocket } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { usePublicConfig } from '../../hooks/usePublicConfig';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { AuthVisualPanel } from '../../components/auth/AuthVisualPanel';
@@ -37,6 +38,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 const RegisterPage: React.FC = () => {
   const { register: registerUser } = useAuth();
+  const { data: publicConfig } = usePublicConfig();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
@@ -45,12 +47,12 @@ const RegisterPage: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterForm>({ resolver: zodResolver(registerSchema), defaultValues: { acceptAIDataUse: false, acceptTerms: false } });
 
   const onSubmit = async (data: RegisterForm) => {
     try {
       setIsLoading(true);
-      await registerUser(data.name, data.email, data.password, { acceptTerms: data.acceptTerms, acceptAIDataUse: data.acceptAIDataUse });
+      await registerUser(data.name, data.email, data.password, { acceptTerms: data.acceptTerms, acceptAIDataUse: publicConfig?.aiEnabled !== false && data.acceptAIDataUse });
       setIsLaunching(true);
       toast.success('Account created successfully!');
       if (canAnimateAuthLaunch()) {
@@ -126,7 +128,7 @@ const RegisterPage: React.FC = () => {
 
             <label className="flex items-start gap-2 text-xs leading-5 text-stone-500"><input type="checkbox" {...register('acceptTerms')} className="mt-1" /><span>I am 18 or older and accept the <Link className="text-teal-700 underline" to="/terms">terms of use</Link>.</span></label>
             {errors.acceptTerms && <p role="alert" className="text-xs text-red-600">{errors.acceptTerms.message}</p>}
-            <label className="flex items-start gap-2 text-xs leading-5 text-stone-500"><input type="checkbox" {...register('acceptAIDataUse')} className="mt-1" /><span>I agree to AI processing described in the <Link className="text-teal-700 underline" to="/privacy">privacy and data-use notice</Link>. Optional—you can enable it later.</span></label>
+            {publicConfig?.aiEnabled !== false && <label className="flex items-start gap-2 text-xs leading-5 text-stone-500"><input type="checkbox" {...register('acceptAIDataUse')} className="mt-1" /><span>I agree to AI processing described in the <Link className="text-teal-700 underline" to="/privacy">privacy and data-use notice</Link>. Optional—you can enable it later.</span></label>}
             <Button type="submit" fullWidth size="lg" isLoading={isLoading} className="mt-2">
               Create Account
             </Button>

@@ -79,7 +79,7 @@ app.get('/api/public-config', (_req, res) => {
   if ((hosted || env.AI_PROVIDER === 'groq') && env.GROQ_API_KEY) processors.push('Groq (AI analysis)');
   if ((hosted || env.AI_PROVIDER === 'ollama') && env.OLLAMA_MODEL) processors.push('Ollama (AI on the server)');
   if (env.EMAIL_PROVIDER === 'resend') processors.push('Resend (account recovery email)');
-  res.json({ success: true, data: { processors, supportEmail: env.SUPPORT_EMAIL || null, operator: env.SERVICE_OPERATOR || null, consentVersion: AI_CONSENT_VERSION, dailyAIRequestLimit: env.AI_DAILY_LIMIT, maxResumes: env.MAX_RESUMES_PER_USER, maxUploadMB: env.NODE_ENV === 'production' ? 4 : 5 } });
+  res.json({ success: true, data: { processors, supportEmail: env.SUPPORT_EMAIL || null, operator: env.SERVICE_OPERATOR || null, consentVersion: AI_CONSENT_VERSION, aiEnabled: env.AI_PROVIDER !== 'disabled', limitedPreview: env.PREVIEW_LIMITED_MODE, passwordResetDelivery: env.EMAIL_PROVIDER === 'console' ? 'operator-log' : 'email', dailyAIRequestLimit: env.AI_DAILY_LIMIT, maxResumes: env.MAX_RESUMES_PER_USER, maxUploadMB: env.NODE_ENV === 'production' ? 4 : 5 } });
 });
 
 // ────────────────────────────────────────────────
@@ -97,7 +97,9 @@ if (env.NODE_ENV === 'development') {
 // API Routes
 // ────────────────────────────────────────────────
 app.get('/api/status', authenticate, async (_req, res) => {
-  const ai = env.AI_PROVIDER === 'fallback'
+  const ai = env.AI_PROVIDER === 'disabled'
+    ? { provider: 'Unavailable', model: null, ready: false, message: 'AI feedback is unavailable in this test preview.' }
+    : env.AI_PROVIDER === 'fallback'
     ? await (async () => {
       const local = env.OLLAMA_MODEL
         ? await checkOllamaStatus(env.OLLAMA_BASE_URL, env.OLLAMA_MODEL)

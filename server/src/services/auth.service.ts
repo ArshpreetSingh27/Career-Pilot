@@ -41,7 +41,7 @@ export class AuthService {
     if (await User.exists({ email: input.email })) {
       throw makeOperationalError('An account with this email already exists', 409);
     }
-    const user = await User.create({ ...input, termsAcceptedAt: input.acceptTerms ? new Date() : undefined, aiConsentVersion: input.acceptAIDataUse ? AI_CONSENT_VERSION : undefined, aiConsentAt: input.acceptAIDataUse ? new Date() : undefined });
+      const user = await User.create({ ...input, termsAcceptedAt: input.acceptTerms ? new Date() : undefined, aiConsentVersion: input.acceptAIDataUse && env.AI_PROVIDER !== 'disabled' ? AI_CONSENT_VERSION : undefined, aiConsentAt: input.acceptAIDataUse && env.AI_PROVIDER !== 'disabled' ? new Date() : undefined });
     return { user: user.toJSON(), tokens: createTokens(user) };
   }
 

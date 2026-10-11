@@ -9,6 +9,7 @@ export function AIConsentPanel({ settings = false }: { settings?: boolean }) {
   const { data, isError } = usePublicConfig();
   const [busy, setBusy] = useState(false);
   const [agree, setAgree] = useState(false);
+  if (data?.aiEnabled === false) return <section className="workspace-panel mb-6 p-5" aria-label="AI availability"><h2 className="text-sm font-semibold">Test preview</h2><p className="mt-2 text-xs leading-6 text-[var(--muted)]">AI feedback is temporarily disabled. You can still manage resumes and applications; please use synthetic test information.</p></section>;
   const accepted = !!data && user?.aiConsentVersion === data.consentVersion;
   if (accepted && !settings) return null;
   async function update(accept: boolean) {

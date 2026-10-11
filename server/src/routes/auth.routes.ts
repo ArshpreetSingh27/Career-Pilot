@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { productionRateStore } from '../services/rateLimit.service';
 import { User } from '../models/User.model';
 import { AI_CONSENT_VERSION } from '../middlewares/aiBudget.middleware';
+import { env } from '../config/env';
 import {
   register, login, logout, refresh, getMe, forgotPassword, resetPassword,
   updateProfile, updatePreferences, changePassword, deleteAccount,
@@ -53,6 +54,7 @@ router.post('/reset-password', resetLimiter, validate(resetPasswordSchema), rese
 // Protected routes
 router.get('/me', authenticate, getMe);
 router.post('/ai-consent', authenticate, async (req, res, next) => {
+  if (env.AI_PROVIDER === 'disabled') { res.status(503).json({ success: false, message: 'AI feedback is unavailable in this test preview.' }); return; }
   if (typeof req.body.accept !== 'boolean') { res.status(400).json({ success: false, message: 'Choose whether to accept AI processing.' }); return; }
   try {
     const user = await User.findByIdAndUpdate(req.user!.id, req.body.accept ? { $set: { aiConsentVersion: AI_CONSENT_VERSION, aiConsentAt: new Date() } } : { $unset: { aiConsentVersion: 1, aiConsentAt: 1 } }, { new: true });

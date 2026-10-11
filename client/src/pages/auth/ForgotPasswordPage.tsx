@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import toast from 'react-hot-toast';
 import { authService } from '../../services/auth.service';
+import { usePublicConfig } from '../../hooks/usePublicConfig';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -20,6 +21,8 @@ type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 const ForgotPasswordPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { data: publicConfig } = usePublicConfig();
+  const operatorLogOnly = publicConfig?.passwordResetDelivery === 'operator-log';
 
   const {
     register,
@@ -34,7 +37,7 @@ const ForgotPasswordPage: React.FC = () => {
       setIsLoading(true);
       await authService.requestPasswordReset(data.email);
       setIsSubmitted(true);
-      toast.success('Check your email for the next step.');
+      toast.success(operatorLogOnly ? 'Ask the test operator for the reset link.' : 'Check your email for the next step.');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send reset link');
     } finally {
@@ -63,7 +66,7 @@ const ForgotPasswordPage: React.FC = () => {
             Reset your password
           </h1>
           <p className="mt-2 text-sm text-surface-500 dark:text-surface-400 text-center">
-            Enter your email and we'll send you a reset link
+            {operatorLogOnly ? 'This test preview records reset links in operator logs; it does not send email.' : "Enter your email and we'll send you a reset link"}
           </p>
         </div>
 
@@ -96,10 +99,10 @@ const ForgotPasswordPage: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-surface-900 dark:text-surface-50 mb-2">
-                Check your email
+                {operatorLogOnly ? 'Contact the test operator' : 'Check your email'}
               </h3>
               <p className="text-sm text-surface-500 dark:text-surface-400 mb-6">
-                If an account exists for that address, a single-use reset link is on its way.
+                {operatorLogOnly ? <>If an account exists, the reset link is in the operator logs. Contact {publicConfig?.supportEmail ? <a href={`mailto:${publicConfig.supportEmail}`} className="underline">{publicConfig.supportEmail}</a> : 'the test operator'} for help.</> : 'If an account exists for that address, a single-use reset link is on its way.'}
               </p>
               <Button
                 variant="outline"
