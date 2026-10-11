@@ -1,4 +1,3 @@
-import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
 import type { ResumeFileType } from '../models/Resume.model';
 import { validateDocxArchive } from './docxSafety.service';
@@ -27,6 +26,7 @@ export async function readResumeFile(buffer: Buffer, mimeType: string): Promise<
   try {
     if (fileType === 'pdf') {
       if (!buffer.subarray(0, 1024).includes(Buffer.from('%PDF-'))) throw new Error('Invalid PDF header');
+      const { PDFParse } = await import('pdf-parse');
       const parser = new PDFParse({ data: buffer });
       try {
         if ((await parser.getInfo()).total > 20) throw fileError('Resumes must be 20 pages or fewer. Upload a shorter document.');
@@ -43,6 +43,7 @@ export async function readResumeFile(buffer: Buffer, mimeType: string): Promise<
     }
   } catch (error) {
     if ((error as { isOperational?: boolean }).isOperational) throw error;
+    console.error('Resume parsing failed:', error);
     throw fileError('The document could not be read. It may be corrupt or password-protected. Export a new text-based PDF or DOCX and try again.');
   }
 
