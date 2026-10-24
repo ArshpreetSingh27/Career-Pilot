@@ -53,6 +53,7 @@ export const sendPasswordResetEmail = async (
   });
 
   if (!response.ok) {
+    console.error(JSON.stringify({ event: 'email_delivery_failed', provider: 'resend', status: response.status }));
     throw new Error(`Email provider rejected the request (${response.status})`);
   }
 };
@@ -73,7 +74,10 @@ export const sendBrevoEmail = async (
       htmlContent: message.html,
     }),
   });
-  if (!response.ok) throw new Error(`Email provider rejected the request (${response.status})`);
+  if (!response.ok) {
+    console.error(JSON.stringify({ event: 'email_delivery_failed', provider: 'brevo', status: response.status }));
+    throw new Error(`Email provider rejected the request (${response.status})`);
+  }
 };
 
 const escapeHtml = (value: string): string => value.replace(/[&<>'"]/g, (character) => ({
