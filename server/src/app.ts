@@ -79,6 +79,7 @@ app.get('/api/public-config', (_req, res) => {
   if ((hosted || env.AI_PROVIDER === 'groq') && env.GROQ_API_KEY) processors.push('Groq (AI analysis)');
   if ((hosted || env.AI_PROVIDER === 'ollama') && env.OLLAMA_MODEL) processors.push('Ollama (AI on the server)');
   if (env.EMAIL_PROVIDER === 'resend') processors.push('Resend (account recovery email)');
+  if (env.EMAIL_PROVIDER === 'brevo') processors.push('Brevo (account recovery email)');
   res.json({ success: true, data: { processors, supportEmail: env.SUPPORT_EMAIL || null, operator: env.SERVICE_OPERATOR || null, consentVersion: AI_CONSENT_VERSION, aiEnabled: env.AI_PROVIDER !== 'disabled', limitedPreview: env.PREVIEW_LIMITED_MODE, passwordResetDelivery: env.EMAIL_PROVIDER === 'console' ? 'operator-log' : 'email', dailyAIRequestLimit: env.AI_DAILY_LIMIT, maxResumes: env.MAX_RESUMES_PER_USER, maxUploadMB: env.NODE_ENV === 'production' ? 4 : 5 } });
 });
 

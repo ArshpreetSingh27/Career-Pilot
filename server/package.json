@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "doctor": "node scripts/doctor.cjs",
     "test": "npm run build && node --test dist/services/*.test.js dist/providers/ai/*.test.js",
-    "test:integration": "npm run build && node --test test/*.integration.cjs",
+    "test:integration": "npm run build && node --test --test-concurrency=1 test/*.integration.cjs",
     "test:live": "npm run build && node scripts/live-resume-smoke.cjs --run",
     "test:storage:private": "npm run build && node scripts/private-storage-smoke.cjs",
     "migrate:private-resumes": "npm run build && node scripts/migrate-private-resumes.cjs",

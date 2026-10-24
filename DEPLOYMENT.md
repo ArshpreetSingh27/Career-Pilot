@@ -25,8 +25,8 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Two different cryptographically random secrets, at least 32 characters each |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Production private-file storage credentials |
 | `CLOUDINARY_FOLDER_PREFIX` | `careerpilot-preview` for an isolated test preview; `careerpilot` is the normal default |
-| `EMAIL_PROVIDER` | `resend` |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Delivery credentials and verified sender |
+| `EMAIL_PROVIDER` | `resend` or `brevo` |
+| `RESEND_API_KEY` or `BREVO_API_KEY`, `EMAIL_FROM` | Selected delivery credential and a sender verified with that provider. Brevo can send a no-custom-domain test email from a verified Gmail sender, but may rewrite the sender address; verify actual delivery. |
 | `SERVICE_OPERATOR`, `SUPPORT_EMAIL` | Real operator identity and public support contact |
 | `TRUST_PROXY_HOPS` | The verified proxy topology; start with the documented Vercel configuration and confirm client-IP behaviour. Never use blanket `trust proxy=true` |
 | `COOKIE_SAME_SITE` | `strict` for this same-origin deployment |

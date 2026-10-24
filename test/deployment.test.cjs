@@ -22,9 +22,12 @@ function config(overrides = {}) {
 }
 test('production configuration accepts hosted setup and fails closed on unsafe settings', () => {
   assert.equal(config().status, 0);
+  assert.equal(config({ EMAIL_PROVIDER: 'brevo', RESEND_API_KEY: '', BREVO_API_KEY: 'synthetic', EMAIL_FROM: 'CareerPilot <support@gmail.com>' }).status, 0);
   for (const overrides of [
     { CLIENT_URL: 'http://localhost:5173' }, { JWT_REFRESH_SECRET: production.JWT_ACCESS_SECRET },
-    { EMAIL_PROVIDER: 'console' }, { SUPPORT_EMAIL: '' }, { SERVICE_OPERATOR: '' },
+    { EMAIL_PROVIDER: 'console' }, { EMAIL_PROVIDER: 'brevo', BREVO_API_KEY: '' },
+    { EMAIL_PROVIDER: 'brevo', BREVO_API_KEY: 'synthetic', EMAIL_FROM: 'CareerPilot <onboarding@resend.dev>' },
+    { SUPPORT_EMAIL: '' }, { SERVICE_OPERATOR: '' },
     { AI_DATA_POLICY_ACKNOWLEDGED: 'false' }, { CRON_SECRET: '' },
     { AI_PROVIDER: 'gemini', GEMINI_API_KEY: 'synthetic', GEMINI_BILLING_VERIFIED: 'false' },
     { AI_PROVIDER: 'fallback', OLLAMA_MODEL: 'local-only' },

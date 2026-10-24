@@ -34,9 +34,10 @@ const envSchema = z.object({
   AI_DAILY_LIMIT: z.coerce.number().int().min(1).max(1000).default(30),
   AI_MAX_CONCURRENT: z.coerce.number().int().min(1).max(50).default(4),
   AI_OPERATION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(240000).default(180000),
-  EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
+  EMAIL_PROVIDER: z.enum(['console', 'resend', 'brevo']).default('console'),
   EMAIL_FROM: z.string().default('CareerPilot <onboarding@resend.dev>'),
   RESEND_API_KEY: z.string().optional(),
+  BREVO_API_KEY: z.string().optional(),
   PASSWORD_RESET_EXPIRES_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
   PASSWORD_RESET_COOLDOWN_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
   // Cloudinary
@@ -71,7 +72,13 @@ const envSchema = z.object({
     if (value[key].length < 32 || /your_|change_this|test|example/i.test(value[key])) problem(key, 'Use an independently generated production secret of at least 32 characters.');
   }
   if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) problem('JWT_REFRESH_SECRET', 'Access and refresh secrets must differ.');
-  if (!limitedPreview && (value.EMAIL_PROVIDER !== 'resend' || !value.RESEND_API_KEY || /onboarding@resend.dev/.test(value.EMAIL_FROM))) problem('EMAIL_PROVIDER', 'Production requires email delivery credentials and a verified sender.');
+  if (!limitedPreview) {
+    const sender = value.EMAIL_FROM.match(/^(?:[^<>]+<)?([^<>\s]+@[^<>\s]+)>?$/)?.[1];
+    if (!sender || !z.string().email().safeParse(sender).success || sender === 'onboarding@resend.dev') problem('EMAIL_FROM', 'Set the sender address verified with the selected email provider.');
+    if (value.EMAIL_PROVIDER === 'resend' && !value.RESEND_API_KEY) problem('RESEND_API_KEY', 'Production Resend delivery requires its API key.');
+    else if (value.EMAIL_PROVIDER === 'brevo' && !value.BREVO_API_KEY) problem('BREVO_API_KEY', 'Production Brevo delivery requires its API key.');
+    else if (value.EMAIL_PROVIDER === 'console') problem('EMAIL_PROVIDER', 'Production requires Resend or Brevo email delivery.');
+  }
   if (!z.string().email().safeParse(value.SUPPORT_EMAIL).success) problem('SUPPORT_EMAIL', 'Set a real public support email.');
   if (!value.SERVICE_OPERATOR.trim()) problem('SERVICE_OPERATOR', 'Set the business/person operating this service.');
   if (!limitedPreview && !value.AI_DATA_POLICY_ACKNOWLEDGED) problem('AI_DATA_POLICY_ACKNOWLEDGED', 'Review AI processor privacy/retention terms before enabling production.');
