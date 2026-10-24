@@ -21,6 +21,7 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | `MONGODB_URI` | Atlas connection for the intended production database, using a least-privilege database account |
 | `MONGODB_DATABASE` | For a test preview, an isolated name such as `careerpilot_preview`; the server uses this even if the URI has another default database. Grant this database user only the necessary preview access when possible. |
 | `CLIENT_URL` | Exact HTTPS origin, e.g. `https://your-project.vercel.app`, without a trailing slash |
+| `VITE_CANONICAL_ORIGIN` | Same public Vercel origin as `CLIENT_URL`, Production only; redirects deployment-specific links before the app loads. Contains no secret. |
 | `VITE_API_URL` | `/api` (or leave unset); never localhost |
 | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Two different cryptographically random secrets, at least 32 characters each |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Production private-file storage credentials |
