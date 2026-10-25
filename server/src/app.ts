@@ -106,13 +106,13 @@ app.get('/api/status', authenticate, async (_req, res) => {
         ? await checkOllamaStatus(env.OLLAMA_BASE_URL, env.OLLAMA_MODEL)
         : null;
       const providers = [
-        { provider: 'Gemini', ready: Boolean(env.GEMINI_API_KEY) && (env.NODE_ENV !== 'production' || env.GEMINI_BILLING_VERIFIED) },
         { provider: 'Groq', model: env.GROQ_MODEL, ready: Boolean(env.GROQ_API_KEY) },
+        { provider: 'Gemini', ready: Boolean(env.GEMINI_API_KEY) && (env.NODE_ENV !== 'production' || env.GEMINI_BILLING_VERIFIED) },
         ...(local ? [local] : []),
       ];
       return {
         provider: 'Automatic fallback',
-        model: 'Gemini -> Groq -> Ollama',
+        model: providers.map((provider) => provider.provider).join(' -> '),
         ready: providers.some((provider) => provider.ready),
         providers,
         message: 'Uses the first configured provider that is not rate-limited or temporarily unavailable.',

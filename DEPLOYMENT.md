@@ -31,7 +31,7 @@ Set these in Vercel's environment settings. Do not copy development `.env` files
 | `SERVICE_OPERATOR`, `SUPPORT_EMAIL` | Real operator identity and public support contact |
 | `TRUST_PROXY_HOPS` | The verified proxy topology; start with the documented Vercel configuration and confirm client-IP behaviour. Never use blanket `trust proxy=true` |
 | `COOKIE_SAME_SITE` | `strict` for this same-origin deployment |
-| `AI_PROVIDER` | `groq` or `fallback`, with approved hosted credentials |
+| `AI_PROVIDER` | `groq` or `fallback` (Groq → Gemini), with approved hosted credentials |
 | `GROQ_API_KEY`, `GROQ_MODEL` | Hosted credentials and a tested structured-output model |
 | `GEMINI_API_KEY` | Optional; used in production only with `GEMINI_BILLING_VERIFIED=true` |
 | `GEMINI_BILLING_VERIFIED` | Set `true` only after confirming an active billing account on the actual API project |

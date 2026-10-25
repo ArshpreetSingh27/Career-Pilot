@@ -20,10 +20,10 @@ export const getAIProvider = (): IAIProvider => {
 
   if (env.AI_PROVIDER === 'fallback') {
     const providers: IAIProvider[] = [];
-    if (env.GEMINI_API_KEY && (env.NODE_ENV !== 'production' || env.GEMINI_BILLING_VERIFIED)) providers.push(new GeminiProvider(env.GEMINI_API_KEY, env.GEMINI_TIMEOUT_MS));
     if (env.GROQ_API_KEY) {
       providers.push(new GroqProvider(env.GROQ_API_KEY, env.GROQ_MODEL, fetch, env.GROQ_TIMEOUT_MS));
     }
+    if (env.GEMINI_API_KEY && (env.NODE_ENV !== 'production' || env.GEMINI_BILLING_VERIFIED)) providers.push(new GeminiProvider(env.GEMINI_API_KEY, env.GEMINI_TIMEOUT_MS));
     if (env.OLLAMA_MODEL) {
       providers.push(new OllamaProvider(env.OLLAMA_BASE_URL, env.OLLAMA_MODEL, fetch, env.OLLAMA_TIMEOUT_MS));
     }
