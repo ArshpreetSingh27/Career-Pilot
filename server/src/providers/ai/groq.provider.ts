@@ -13,6 +13,7 @@ import { buildResumeOptimizerPrompt, RESUME_OPTIMIZER_SYSTEM_INSTRUCTION } from 
 import { buildInterviewFeedbackPrompt, buildInterviewQuestionsPrompt, INTERVIEW_SYSTEM_INSTRUCTION } from './prompts/interview.prompt';
 
 const ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+const groqKeyLocation = process.env.VERCEL ? 'Vercel Production environment variables, then redeploy' : 'server/.env';
 
 interface GroqChatResponse {
   choices?: Array<{ message?: { content?: string | null; refusal?: string | null } }>;
@@ -83,7 +84,7 @@ export class GroqProvider implements IAIProvider {
     private readonly fetchImpl: typeof fetch = fetch,
     private readonly timeoutMs = 90_000
   ) {
-    if (!apiKey.trim()) throw operationalError('Set GROQ_API_KEY in server/.env to enable Groq.');
+    if (!apiKey.trim()) throw operationalError(`Set GROQ_API_KEY in ${groqKeyLocation} to enable Groq.`);
     if (!model.trim()) throw operationalError('Set GROQ_MODEL to an available Groq model.');
     this.providerVersion = model.trim();
   }
@@ -137,7 +138,7 @@ export class GroqProvider implements IAIProvider {
     // text, request details, or other sensitive account information.
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        throw operationalError('Groq rejected the API key. Replace GROQ_API_KEY in server/.env.');
+        throw operationalError(`Groq rejected the API key. Replace GROQ_API_KEY in ${groqKeyLocation}.`);
       }
       if (response.status === 429) {
         throw operationalError('Groq rate limit reached. Wait and try again.', false, true);

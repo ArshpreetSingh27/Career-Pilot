@@ -45,7 +45,7 @@ export const getAIProvider = (): IAIProvider => {
   if (env.AI_PROVIDER === 'groq') {
     if (!env.GROQ_API_KEY) {
       throw Object.assign(
-        new Error('Groq is not configured. Set GROQ_API_KEY in server/.env.'),
+        new Error(`Groq is not configured. Set GROQ_API_KEY in ${process.env.VERCEL ? 'Vercel Production environment variables, then redeploy' : 'server/.env'}.`),
         { statusCode: 503, isOperational: true }
       );
     }

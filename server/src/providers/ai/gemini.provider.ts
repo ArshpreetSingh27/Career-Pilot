@@ -39,7 +39,7 @@ const normalizeGeminiError = (operation: string, error: unknown): GeminiFailure 
   const fallbackEligible = status === 429 || (status !== undefined && status >= 500) || isTimeout || isNetworkFailure;
 
   let safeMessage = `Gemini could not complete ${operation}.`;
-  if (status === 401 || status === 403) safeMessage = 'Gemini rejected the API key. Replace GEMINI_API_KEY in server/.env.';
+  if (status === 401 || status === 403) safeMessage = `Gemini rejected the API key. Replace GEMINI_API_KEY in ${process.env.VERCEL ? 'Vercel Production environment variables, then redeploy' : 'server/.env'}.`;
   else if (status === 429) safeMessage = 'Gemini rate limit reached. Wait and try again.';
   else if (fallbackEligible) safeMessage = 'Gemini is temporarily unavailable. Try again shortly.';
   else if (/returned non-JSON|response failed .* validation/i.test(message)) safeMessage = message;
