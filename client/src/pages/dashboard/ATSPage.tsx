@@ -109,7 +109,9 @@ const ATSPage: React.FC = () => {
           const msg =
             err?.response?.data?.message ??
             'ATS analysis failed. Please check your API key or try again.';
-          toast.error(msg);
+          toast.error(msg === 'Review and accept AI data use before generating feedback.'
+            ? 'Review the AI data use panel above, then run ATS Check again.'
+            : msg);
         },
         onSuccess: () => {
           toast.success(force ? 'ATS re-analysis complete!' : 'ATS analysis complete!');

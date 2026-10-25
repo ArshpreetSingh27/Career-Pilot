@@ -35,6 +35,11 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    if (error.response?.status === 403 &&
+      (error.response.data as { message?: string } | undefined)?.message === 'Review and accept AI data use before generating feedback.') {
+      window.dispatchEvent(new Event('ai:consent-required'));
+    }
+
     const publicAuthRequest = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password']
       .some((path) => originalRequest.url?.includes(path));
 
