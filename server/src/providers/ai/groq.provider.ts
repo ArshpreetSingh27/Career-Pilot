@@ -31,6 +31,8 @@ const operationalError = (message: string, retryable = false, fallbackEligible =
     fallbackEligible,
   });
 
+type StructuredError = Error & { retryable?: boolean; schemaGenerationFailed?: boolean };
+
 // Only use provider error text to choose a fixed, safe message. Groq's raw
 // error body may include the submitted resume or generated resume edits.
 const badRequestError = (payload: GroqErrorResponse): Error => {
@@ -39,7 +41,9 @@ const badRequestError = (payload: GroqErrorResponse): Error => {
     .join(' ').toLowerCase().slice(0, 4000);
 
   if (/json_validate_failed|failed_generation|generated json.*(schema|valid)/.test(details)) {
-    return operationalError('Groq could not produce a valid structured response. Please try again.', true);
+    return Object.assign(operationalError('Groq could not produce a valid structured response. Please try again.', true), {
+      schemaGenerationFailed: true,
+    });
   }
   if (/(context.length|context_window|prompt.too.long|too.many.tokens|token.limit)/.test(details)) {
     return operationalError('Groq says this request is too long. Shorten the resume or job description and try again.');
@@ -94,7 +98,8 @@ export class GroqProvider implements IAIProvider {
     instruction: string,
     schema: z.ZodType<T>,
     operation: string,
-    schemaName: string
+    schemaName: string,
+    jsonObjectMode = false
   ): Promise<T> {
     assertRequestActive();
     let response: Response;
@@ -112,7 +117,7 @@ export class GroqProvider implements IAIProvider {
             { role: 'user', content: prompt },
           ],
           temperature: 0.1,
-          response_format: {
+          response_format: jsonObjectMode ? { type: 'json_object' } : {
             type: 'json_schema',
             json_schema: {
               name: schemaName,
@@ -190,27 +195,38 @@ export class GroqProvider implements IAIProvider {
     return result.data;
   }
 
-  private async withRetry<T>(attempt: () => Promise<T>): Promise<T> {
+  private async withRetry<T>(attempt: (jsonObjectMode: boolean) => Promise<T>): Promise<T> {
     try {
-      return await attempt();
+      return await attempt(false);
     } catch (error) {
-      if ((error as Error & { retryable?: boolean }).retryable !== true) throw error;
-      return attempt();
+      if ((error as StructuredError).schemaGenerationFailed) {
+        // This path sends the same prompt without constrained decoding; the
+        // result still has to pass the full local Zod schema before use.
+        console.warn('[Groq] Strict schema generation failed; using validated JSON object fallback.');
+        try {
+          return await attempt(true);
+        } catch (fallbackError) {
+          if ((fallbackError as StructuredError).retryable !== true) throw fallbackError;
+          return attempt(true);
+        }
+      }
+      if ((error as StructuredError).retryable !== true) throw error;
+      return attempt(false);
     }
   }
 
   analyzeResume(text: string): Promise<ResumeAnalysisResult> {
     const prompt = buildResumeAnalysisPrompt(text);
-    return this.withRetry(() => this.generateStructured(
+    return this.withRetry((jsonObjectMode) => this.generateStructured(
       prompt, RESUME_ANALYSIS_SYSTEM_INSTRUCTION, analysisResultSchema,
-      'resume analysis', 'resume_analysis'
+      'resume analysis', 'resume_analysis', jsonObjectMode
     ));
   }
 
   calculateATS(resumeText: string, jobDescription: string): Promise<ATSResult> {
     const prompt = buildATSPrompt(resumeText, jobDescription);
-    return this.withRetry(() => this.generateStructured(
-      prompt, ATS_SYSTEM_INSTRUCTION, atsResultSchema, 'ATS analysis', 'ats_analysis'
+    return this.withRetry((jsonObjectMode) => this.generateStructured(
+      prompt, ATS_SYSTEM_INSTRUCTION, atsResultSchema, 'ATS analysis', 'ats_analysis', jsonObjectMode
     ));
   }
 
@@ -234,9 +250,9 @@ Strengths: ${atsResult.strengths.slice(0, 3).join('; ') || 'none'}
 Weaknesses: ${atsResult.weaknesses.slice(0, 3).join('; ') || 'none'}`
       : undefined;
     const prompt = buildResumeOptimizerPrompt(resumeText, jobDescription, analysisSummary, atsSummary);
-    return this.withRetry(() => this.generateStructured(
+    return this.withRetry((jsonObjectMode) => this.generateStructured(
       prompt, RESUME_OPTIMIZER_SYSTEM_INSTRUCTION, optimizationResultSchema,
-      'resume optimization', 'resume_optimization'
+      'resume optimization', 'resume_optimization', jsonObjectMode
     ));
   }
 
@@ -246,9 +262,9 @@ Weaknesses: ${atsResult.weaknesses.slice(0, 3).join('; ') || 'none'}`
 
   async generateInterviewQuestions(resumeText: string, targetRole: string, jobDescription: string): Promise<InterviewQuestionsResult> {
     const prompt = buildInterviewQuestionsPrompt(resumeText, targetRole, jobDescription);
-    return this.withRetry(() => this.generateStructured(
+    return this.withRetry((jsonObjectMode) => this.generateStructured(
       prompt, INTERVIEW_SYSTEM_INSTRUCTION, interviewQuestionsResultSchema,
-      'interview question generation', 'interview_questions'
+      'interview question generation', 'interview_questions', jsonObjectMode
     ));
   }
 
@@ -259,9 +275,9 @@ Weaknesses: ${atsResult.weaknesses.slice(0, 3).join('; ') || 'none'}`
     answer: string
   ): Promise<InterviewAnswerFeedbackResult> {
     const prompt = buildInterviewFeedbackPrompt(resumeText, targetRole, question, answer);
-    return this.withRetry(() => this.generateStructured(
+    return this.withRetry((jsonObjectMode) => this.generateStructured(
       prompt, INTERVIEW_SYSTEM_INSTRUCTION, interviewAnswerFeedbackSchema,
-      'interview answer feedback', 'interview_feedback'
+      'interview answer feedback', 'interview_feedback', jsonObjectMode
     ));
   }
 

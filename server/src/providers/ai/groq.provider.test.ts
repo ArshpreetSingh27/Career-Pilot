@@ -79,10 +79,12 @@ test('rate limit is not retried automatically', async () => {
   assert.equal(calls, 1);
 });
 
-test('400 JSON generation failure is retried once without leaking provider content', async () => {
+test('400 strict JSON generation failure falls back to locally validated JSON object mode', async () => {
   let calls = 0;
-  const fakeFetch = (async () => {
+  const modes: string[] = [];
+  const fakeFetch = (async (_input: string | URL | Request, init?: RequestInit) => {
     calls++;
+    modes.push((JSON.parse(String(init?.body)) as { response_format: { type: string } }).response_format.type);
     if (calls === 1) {
       return new Response(JSON.stringify({ error: {
         code: 'json_validate_failed',
@@ -95,6 +97,23 @@ test('400 JSON generation failure is retried once without leaking provider conte
   const provider = new GroqProvider('test-only-key', undefined, fakeFetch);
   assert.equal((await provider.calculateATS('private resume', 'job')).atsScore, 70);
   assert.equal(calls, 2);
+  assert.deepEqual(modes, ['json_schema', 'json_object']);
+});
+
+test('JSON object fallback still rejects schema-invalid results', async () => {
+  let calls = 0;
+  const fakeFetch = (async () => {
+    calls++;
+    if (calls === 1) return new Response(JSON.stringify({ error: { code: 'json_validate_failed' } }), { status: 400 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ atsScore: 99, secret: 'private resume' }) } }] }), { status: 200 });
+  }) as typeof fetch;
+  const provider = new GroqProvider('test-only-key', undefined, fakeFetch);
+  await assert.rejects(provider.calculateATS('private resume', 'job'), (error: Error) => {
+    assert.match(error.message, /failed ATS analysis validation/);
+    assert.doesNotMatch(error.message, /private resume|test-only-key/);
+    return true;
+  });
+  assert.equal(calls, 3);
 });
 
 test('400 model and unknown errors have safe, accurate messages and no automatic retry', async () => {
