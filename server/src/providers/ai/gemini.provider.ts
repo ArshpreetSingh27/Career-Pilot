@@ -38,6 +38,13 @@ const normalizeGeminiError = (operation: string, error: unknown): GeminiFailure 
   const isNetworkFailure = /fetch failed|network|econnreset|enotfound|socket hang up/i.test(message);
   const fallbackEligible = status === 429 || (status !== undefined && status >= 500) || isTimeout || isNetworkFailure;
 
+  console.warn('[GeminiProvider] Request failed', {
+    operation,
+    upstreamStatus: status ?? null,
+    timeout: isTimeout,
+    networkFailure: isNetworkFailure,
+  });
+
   let safeMessage = `Gemini could not complete ${operation}.`;
   if (status === 401 || status === 403) safeMessage = `Gemini rejected the API key. Replace GEMINI_API_KEY in ${process.env.VERCEL ? 'Vercel Production environment variables, then redeploy' : 'server/.env'}.`;
   else if (status === 429) safeMessage = 'Gemini rate limit reached. Wait and try again.';
@@ -54,7 +61,7 @@ const normalizeGeminiError = (operation: string, error: unknown): GeminiFailure 
 
 export class GeminiProvider implements IAIProvider {
   readonly providerName = 'Google Gemini';
-  readonly providerVersion = 'gemini-flash-latest';
+  readonly providerVersion = 'gemini-3.5-flash-lite';
 
   private readonly client: GoogleGenerativeAI;
 
@@ -69,7 +76,7 @@ export class GeminiProvider implements IAIProvider {
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.2, // lower = more deterministic JSON output
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
       },
     });
 
@@ -84,7 +91,7 @@ export class GeminiProvider implements IAIProvider {
       const model = this.client.getGenerativeModel({
         model: this.providerVersion,
         systemInstruction: instruction,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.15, maxOutputTokens: 4096 },
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.15, maxOutputTokens: 8192 },
       });
       assertRequestActive();
       const result = await model.generateContent(prompt, { signal: providerSignal(this.timeoutMs) });
@@ -156,7 +163,7 @@ export class GeminiProvider implements IAIProvider {
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.1, // very deterministic for scoring
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
         },
       });
 
@@ -228,7 +235,7 @@ Weaknesses: ${atsResult.weaknesses.slice(0, 3).join('; ') || 'none'}`
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.15, // very deterministic for structured optimization
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
         },
       });
 
